@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <!-- <link rel="stylesheet" type="text/css" href="light.css"/> -->
+    <link rel="stylesheet" type="text/css" href="light.css" />
+
+</head>
+
+<body>
+    <script src="d3.min.js"></script>
+    <script src="topojson.min.js"></script>
+    <script src="queue.js"></script>
+    <script src="jquery.js"></script>
+
+    <div>
+        <ul>
+            <li><a href="index.html"> Population</a></li>
+
+            <li><a href="write-up.html"> Write up</a></li>
+        </ul>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-2" stlyle="text-align: center">
+            <center>
+                <h3>Race Selection</h3>
+            </center>
+        </div>
+        <div class="col-lg-2">
+            <button onclick="uncheck()">Clear</button>
+        </div>
+        <div class="col-lg-2">
+            <button onclick="apply()">Apply</button>
+        </div>
+    </div>
+    <div class="row">
+
+        <div class="col-lg-2">
+            <label class="custom-control custom-radio">
+                <input type="radio" class="custom-control-input" id="r1">
+                <span class="custom-control-indicator"></span>
+                <span class="custom-control-description">White</span>
+            </label>
+        </div>
+        <div class="col-lg-2">
+            <label class="custom-control custom-radio">
+                <input type="radio" class="custom-control-input" id="r2">
+                <span class="custom-control-indicator"></span>
+                <span class="custom-control-description">Black</span>
+            </label>
+        </div>
+        <div class="col-lg-2">
+            <label class="custom-control custom-radio">
+                <input type="radio" class="custom-control-input" id="r3">
+                <span class="custom-control-indicator"></span>
+                <span class="custom-control-description">AmericanIndian</span>
+            </label>
+        </div>
+        <div class="col-lg-2">
+            <label class="custom-control custom-radio">
+                <input type="radio" class="custom-control-input" id="r9">
+                <span class="custom-control-indicator"></span>
+                <span class="custom-control-description">Japanese</span>
+            </label>
+        </div>
+
+    </div>
+    <div class="row">
+
+        <div class="col-lg-2">
+            <label class="custom-control custom-radio">
+                <input type="radio" class="custom-control-input" id="r10">
+                <span class="custom-control-indicator"></span>
+                <span class="custom-control-description">Korean</span>
+            </label>
+        </div>
+        <div class="col-lg-2">
+            <label class="custom-control custom-radio">
+                <input type="radio" class="custom-control-input" id="r11">
+                <span class="custom-control-indicator"></span>
+                <span class="custom-control-description">Vietnamese</span>
+            </label>
+        </div>
+        <div class="col-lg-2">
+            <label class="custom-control custom-radio">
+                <input type="radio" class="custom-control-input" id="r7">
+                <span class="custom-control-indicator"></span>
+                <span class="custom-control-description">Other</span>
+            </label>
+        </div>
+        <div class="col-lg-2">
+            <label class="custom-control custom-radio">
+                <input type="radio" class="custom-control-input" id="r8">
+                <span class="custom-control-indicator"></span>
+                <span class="custom-control-description">Filipino</span>
+            </label>
+        </div>
+
+
+
+    </div>
+    <div class="row">
+        <div class="col-lg-2">
+            <label class="custom-control custom-radio">
+                <input type="radio" class="custom-control-input" id="r5">
+                <span class="custom-control-indicator"></span>
+                <span class="custom-control-description">Hawaiian</span>
+            </label>
+        </div>
+        <div class="col-lg-2">
+            <label class="custom-control custom-radio">
+                <input type="radio" class="custom-control-input" id="r6">
+                <span class="custom-control-indicator"></span>
+                <span class="custom-control-description">Chinese</span>
+            </label>
+        </div>
+        <div class="col-lg-2">
+            <label class="custom-control custom-radio">
+                <input type="radio" class="custom-control-input" id="All">
+                <span class="custom-control-indicator"></span>
+                <span class="custom-control-description">All</span>
+            </label>
+        </div>
+    </div>
+    <br class="clearBoth" />
+
+    </div>
+    <svg id="level1">
+        <p> Click on a filter for each race or click on ALL to see the default view. Clear after each iteration.</p>
+
+    </svg>
+    <div class="tooltip"></div>
+    <div class="tooltip2"></div>
+    <div class="aside"></div>
+    <div class="ageAside"></div>
+    <div class="title"></div>
+
+
+
+    <div class="barchart"></div>
+
+
+    </div>
+    <script>
+        function uncheck() {
+            $('input[class = "custom-control-input"]').prop('checked', false);
+        }
+
+        function apply() {
+
+            document.getElementById("level1").innerHTML = "";
+
+
+            var width = 960,
+                height = 600;
+
+            var formatRatio = d3.format("%");
+
+            var formatNum = d3.format(".1");
+
+            var path = d3.geoPath()
+                .projection(null);
+
+            var radius = d3.scaleSqrt()
+                .domain([0, 1e6])
+                .range([0, 8]);
+
+            var svg = d3.select("body svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            //add legend
+            var legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", "translate(" + (width - 50) + "," + (height - 20) + ")")
+                .selectAll("g")
+                .data([1e6, 5e6, 1e7])
+                .enter().append("g");
+
+            legend.append("circle")
+                .attr("cy", function (d) {
+                    return -radius(d);
+                })
+                .attr("r", radius);
+
+            legend.append("text")
+                .attr("y", function (d) {
+                    return -2 * radius(d);
+                })
+                .attr("dy", "1.3em")
+                .text(d3.format(".1s"));
+
+            var barTooltip = d3.select(".tooltip")
+                .style("opacity", 0)
+                .style("width", 600);
+            var barAside = d3.select(".aside")
+                .style("opacity", 0)
+                .style("width", 600);
+            var ageAside = d3.select(".ageAside")
+                .style("opacity", 0)
+                .style("width", 600);
+            var title = d3.select(".title")
+                .style("opacity", 0)
+                .style("width", 600);
+
+
+
+
+            //read in data
+            queue()
+                .defer(d3.json, "pop.json") //our topojson from before
+                .defer(d3.csv, "pop.csv") //our data for the bar chart
+
+            .await(ready); //ready is the function name
+
+            function ready(error, us, dat) {
+                if (error) throw error;
+
+
+                svg.append("path")
+                    .datum(topojson.feature(us, us.objects.nation))
+                    .attr("class", "land")
+                    .attr("d", path);
+
+                svg.append("path")
+                    .datum(topojson.mesh(us, us.objects.states, function (a, b) {
+                        return a !== b;
+                    }))
+                    .attr("class", "border border--state")
+                    .attr("d", path);
+
+                svg.append("g")
+                    .attr("class", "bubble")
+                    .selectAll("circle")
+                    .data(topojson.feature(us, us.objects.counties).features
+                        .sort(function (a, b) {
+                            return b.properties.profit - a.properties.profit;
+                        }))
+                    .enter().append("circle")
+                    .attr("transform", function (d) {
+                        return "translate(" + path.centroid(d) + ")";
+                    })
+                    .attr("r", function (d) {
+                        var percent = 0;
+                        if (document.getElementById("r1").checked == true) {
+                            percent += d.properties.r1;
+                            console.log(d.properties.r1)
+                        }
+                        if (document.getElementById("r2").checked == true) {
+                            percent += d.properties.r2;
+                        }
+                        if (document.getElementById("r3").checked == true) {
+                            percent += d.properties.r3;
+                        }
+
+                        if (document.getElementById("r5").checked == true) {
+                            percent += d.properties.r5;
+                        }
+                        if (document.getElementById("r6").checked == true) {
+                            percent += d.properties.r6;
+                        }
+                        if (document.getElementById("r7").checked == true) {
+                            percent += d.properties.r7;
+                        }
+                        if (document.getElementById("r8").checked == true) {
+                            percent += d.properties.r8;
+                        }
+                        if (document.getElementById("r9").checked == true) {
+                            percent += d.properties.r9;
+                        }
+                        if (document.getElementById("r10").checked == true) {
+                            percent += d.properties.r10;
+                        }
+                        if (document.getElementById("r11").checked == true) {
+                            percent += d.properties.r11;
+                        }
+                        if (percent != 0) {
+                            console.log(percent);
+                            return radius(d.properties.profit * (percent / 100));
+
+                        }
+                        if (document.getElementById("All").checked == true) {
+                            percent += d.properties.r11;
+                        } {
+                            return radius(d.properties.profit);
+                        }
+                        percent = 0;
+                    })
+                    .style("fill", function (d) {
+
+                        if (document.getElementById("r1").checked == true) {
+                            return "#1d6ea5";
+                        }
+                        if (document.getElementById("r2").checked == true) {
+                            return "#e87524";
+                        }
+                        if (document.getElementById("r3").checked == true) {
+                            return "#209346";
+                        }
+
+                        if (document.getElementById("r5").checked == true) {
+                            return "#abad37";
+                        }
+                        if (document.getElementById("r6").checked == true) {
+                            return "#c42527";
+                        }
+                        if (document.getElementById("r7").checked == true) {
+                            return "#1d6ea5";
+                        }
+                        if (document.getElementById("r8").checked == true) {
+                            return "#1d6ea5";
+                        }
+                        if (document.getElementById("r9").checked == true) {
+                            return "#1d6ea5";
+                        }
+                        if (document.getElementById("r10").checked == true) {
+                            return "#1d6ea5";
+                        }
+                        if (document.getElementById("r11").checked == true) {
+                            return "#1d6ea5";
+                        }
+
+                    })
+
+
+                .on("mouseover", function (d) {
+
+                        var circleId = d.id;
+                        barTooltip.transition()
+                            .duration(500)
+                            .style("opacity", .7);
+
+                        var tip = "<h3>" + d.properties.name + "</h3>";
+                        var tip = tip + "<strong>Population count: </strong> " + d.properties.profit + "<br/>";
+
+
+                        barTooltip.html(tip)
+                            .style("left", (d3.event.pageX) + "px")
+                            .style("top", (d3.event.pageY) + "px");
+
+                        //Now add some bars representing category sales in the county
+                        //  This is long but yeilds a great result. In my other D3 course you
+                        //  go into detail about making bar charts to understand this further.
+                        var bar = []
+
+                        dat.filter(function (d) {
+                                return d.Id2 == circleId;
+                            })
+                            .forEach(function (r) {
+                                bar.push({
+                                    name: r.Geography,
+                                    values: [+r['Male'], +r['Female']]
+                                })
+                            });
+                        bar.forEach(function (b) {
+                            console.log(bar);
+                            render(b);
+                        });
+
+
+                        function render(bar) {
+
+                            var width = 420,
+                                barHeight = 20;
+
+                            var x = d3.scaleLinear()
+                                .domain([0, d3.max(bar.values)])
+                                .range([0, width - 200]);
+
+                            var chart = d3.select(".tooltip").append("svg")
+                                .attr("width", width)
+                                .attr("height", barHeight * bar.values.length);
+
+
+                            var rectangle = chart.selectAll("g")
+                                .data(bar.values)
+                                .enter().append("g")
+                                .attr("transform", function (d, i) {
+
+                                    return "translate(0," + i * barHeight + ")";
+                                });
+
+                            rectangle.append("rect")
+
+                            .attr("width", function (d) {
+                                    return x(d);
+                                })
+                                .attr("height", barHeight - 1);
+
+
+                            rectangle.append("text")
+                                .attr("x", function (d) {
+                                    return x(d) - 50;
+                                })
+                                .attr("y", barHeight / 2)
+                                .attr("dy", ".35em")
+                                .text(function (d) {
+                                    return d;
+                                });
+                            rectangle.append("text")
+                                .attr("x", 3)
+                                .attr("y", barHeight / 2)
+                                .attr("dy", ".35em")
+                                .text(function (d, i) {
+                                    if (i == 0) {
+                                        return "Male";
+                                    } else {
+                                        return "Female";
+                                    }
+                                });
+
+                        }
+                    })
+                    .on("mouseout", function (d) {
+                        barTooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+                    })
+                    .on("click", function (d) {
+
+                        var circleId = d.id;
+
+                        //pie chart
+                        barAside.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+
+                        barAside.style("left", 1050 + "px")
+                            .style("top", 180 + "px")
+                            .html("");
+
+                        //county heading
+                        title.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+                        var blah = "<h1>" + d.properties.name + "</h1>";
+                        title.style("left", 1050 + "px")
+                            .style("top", 100 + "px")
+                            .html(blah);
+
+                        //age pie chart
+
+                        ageAside.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+
+                        ageAside.style("left", 1050 + "px")
+                            .style("top", 400 - 20 + "px")
+                            .html("");
+
+                        ethinicity();
+                        age();
+
+                        function ethinicity() {
+                            var radius = 74,
+                                padding = 10;
+
+                            var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+                            var arc = d3.arc()
+                                .outerRadius(radius)
+                                .innerRadius(radius - 30);
+
+                            var pie = d3.pie()
+                                .sort(null)
+                                .value(function (d) {
+                                    return d.population;
+                                });
+
+                            color.domain(d3.keys(dat[0]).filter(function (key) {
+                                return key == "White" || key == "Black" || key == "AmericanIndian" || key == "Hawaiian" || key == "Other" || key == "Chinese" || key == "Filipino" || key == "Japanese" || key == "Korean" || key == "Vietnamese";
+                            }));
+
+
+
+                            dat.forEach(function (d) {
+                                d.ages = color.domain().map(function (name) {
+                                    return {
+                                        name: name,
+                                        population: +d[name]
+                                    };
+                                });
+                            });
+
+                            if (!document.getElementById("legend2")) {
+
+                                var legend2 = d3.select(".aside").append("svg")
+                                    .attr("id", "legend2")
+                                    .attr("width", radius * 2)
+                                    .attr("height", radius * 2 + 30)
+                                    .attr("bottom", 50)
+                                    .selectAll("g")
+                                    .data(color.domain().slice().reverse())
+                                    .enter().append("g")
+                                    .attr("transform", function (d, i) {
+                                        return "translate(0," + i * 20 + ")";
+                                    });
+
+                                legend2.append("rect")
+                                    .attr("width", 18)
+                                    .attr("height", 18)
+                                    .style("fill", color);
+
+                                legend2.append("text")
+                                    .attr("x", 24)
+                                    .attr("y", 9)
+                                    .attr("dy", ".35em")
+                                    .text(function (d) {
+                                        return d;
+                                    });
+
+                            }
+
+
+
+                            var svg = d3.select(".aside").selectAll(".pie")
+                                .data(dat.filter(function (d) {
+                                    return d.Id2 == circleId;
+                                }))
+                                .enter()
+                                .append("svg")
+                                .attr("class", "pie")
+                                .attr("width", radius * 2)
+                                .attr("height", radius * 2)
+                                .append("g")
+                                .attr("transform", "translate(" + radius + "," + radius + ")");
+
+                            svg.selectAll(".arc")
+                                .data(function (d) {
+                                    return pie(d.ages);
+                                })
+                                .enter().append("path")
+                                .attr("class", "arc")
+                                .attr("d", arc)
+                                .style("fill", function (d) {
+                                    return color(d.data.name);
+                                })
+                                .on("mouseover", function (d) {
+
+                                    var circleId = d.id;
+                                    tooltip2.transition()
+                                        .duration(500)
+                                        .style("opacity", .7);
+
+
+                                    var tip = tip + d.data.name + "<br/>";
+
+
+                                    tooltip2.html(tip)
+                                        .style("left", (d3.event.pageX) + "px")
+                                        .style("top", (d3.event.pageY) + "px");
+
+                                });
+
+
+
+                            svg.append("text")
+                                .attr("dy", ".35em")
+                                .style("text-anchor", "middle")
+                                .text(function (d) {
+                                    console.log(d)
+                                    return "Ethinicity";
+                                });
+
+                        }
+
+
+                        function age() {
+                            var radius = 74,
+                                padding = 10;
+
+                            var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+                            var arc = d3.arc()
+                                .outerRadius(radius)
+                                .innerRadius(radius - 30);
+
+                            var pie = d3.pie()
+                                .sort(null)
+                                .value(function (d) {
+                                    return d.population;
+                                });
+                            //under5,5-9,10-14,15-19,20-14,25-34,35-44,45-54,55-59,60-64,65-74,75-84,over85
+                            color.domain(d3.keys(dat[0]).filter(function (key) {
+                                return key == "under5" || key == "5-9" || key == "10-14" || key == "15-19" || key == "20-14" || key == "25-34" || key == "35-44" || key == "45-54" || key == "55-59" || key == "60-64" || key == "65-74" || key == "75-84" || key == "over85";
+                            }));
+
+
+                            dat.forEach(function (d) {
+                                d.hi = color.domain().map(function (name) {
+                                    return {
+                                        name: name,
+                                        population: +d[name]
+                                    };
+                                });
+                            });
+
+                            if (!document.getElementById("legend3")) {
+
+                                var legend3 = d3.select(".ageAside").append("svg")
+                                    .attr("id", "legend3")
+                                    .attr("width", radius * 2)
+                                    .attr("height", radius * 2 + 30)
+                                    .attr("bottom", 50)
+                                    .selectAll("g")
+                                    .data(color.domain().slice().reverse())
+                                    .enter().append("g")
+                                    .attr("transform", function (d, i) {
+                                        return "translate(0," + i * 20 + ")";
+                                    });
+
+                                legend3.append("rect")
+                                    .attr("width", 18)
+                                    .attr("height", 18)
+                                    .style("fill", color);
+
+                                legend3.append("text")
+                                    .attr("x", 24)
+                                    .attr("y", 9)
+                                    .attr("dy", ".35em")
+                                    .text(function (d) {
+                                        return d;
+                                    });
+                            }
+
+                            var svg = d3.select(".ageAside").selectAll(".pie")
+                                .data(dat.filter(function (d) {
+                                    return d.Id2 == circleId;
+                                }))
+                                .enter()
+                                .append("svg")
+                                .attr("class", "pie")
+                                .attr("width", radius * 2)
+                                .attr("height", radius * 2)
+                                .append("g")
+                                .attr("transform", "translate(" + radius + "," + radius + ")");
+
+                            svg.selectAll(".arc")
+                                .data(function (d) {
+                                    return pie(d.hi);
+                                })
+                                .enter().append("path")
+                                .attr("class", "arc")
+                                .attr("d", arc)
+                                .style("fill", function (d) {
+                                    return color(d.data.name);
+                                });
+
+
+                            svg.append("text")
+                                .attr("dy", ".35em")
+                                .style("text-anchor", "middle")
+                                .text(function (d) {
+                                    console.log(d)
+                                    return "Age";
+                                });
+
+                        }
+
+                        states();
+
+
+                    });
+
+                function states() {
+                    document.getElementById("r1").checked = false;
+                    document.getElementById("r2").checked = false;
+                    document.getElementById("r3").checked = false;
+                    document.getElementById("r4").checked = false;
+                    document.getElementById("r5").checked = false;
+                    document.getElementById("r6").checked = false;
+                    document.getElementById("r7").checked = false;
+                    document.getElementById("r8").checked = false;
+                    document.getElementById("r9").checked = false;
+                    document.getElementById("r10").checked = false;
+                    document.getElementById("r11").checked = false;
+                    document.getElementById("r12").checked = false;
+                }
+
+
+
+
+
+                d3.select(self.frameElement).style("height", height + "px");
+            }
+
+        }
+    </script>
